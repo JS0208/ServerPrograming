@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>백테스팅 시스템</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
+        header { background-color: #333; color: #fff; padding: 1em 0; text-align: center; }
+        nav ul { list-style-type: none; padding: 0; text-align: center; background-color: #444; }
+        nav ul li { display: inline; margin-right: 20px; }
+        nav ul li a { color: white; text-decoration: none; padding: 10px 15px; display: inline-block; }
+        nav ul li a:hover { background-color: #555; }
+        .container { width: 80%; margin: auto; overflow: hidden; padding: 20px; background-color: white; min-height: 300px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>웹 기반 전략 백테스팅 시스템</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('home') }}">홈</a></li>
+            <li><a href="{{ url_for('list_strategies') }}">전략 목록</a></li>
+            <li><a href="{{ url_for('add_strategy') }}">전략 등록</a></li>
+            <li><a href="{{ url_for('stock_data_view') }}">주가 데이터 조회</a></li>
+            <li><a href="{{ url_for('run_backtest_page') }}">백테스트 실행</a></li> </ul>
+    </nav>
+    <div class="container">
+        <h2>환영합니다!</h2>
+        <p>본 시스템은 사용자가 투자 전략을 등록하고, 과거 데이터를 기반으로 해당 전략의 성과를 테스트(백테스트)할 수 있도록 지원합니다.</p>
+        <p>메뉴를 통해 다양한 기능을 이용해보세요.</p>
+        <ul>
+            <li><strong>전략 목록:</strong> 등록된 모든 투자 전략을 확인합니다.</li>
+            <li><strong>전략 등록:</strong> 새로운 투자 전략과 그 조건을 시스템에 추가합니다.</li>
+            <li><strong>주가 데이터 조회:</strong> 특정 종목의 과거 주가 데이터를 조회합니다.</li>
+        </ul>
+    </div>
+</body>
+</html>

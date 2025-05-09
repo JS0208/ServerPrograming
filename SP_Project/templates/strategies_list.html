@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>전략 목록</title>
+    <style>
+        table { width: 80%; border-collapse: collapse; margin: 20px auto; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        a { text-decoration: none; color: #007bff; }
+        .add-link { display: block; width: fit-content; margin: 20px auto; padding: 10px 15px; background-color: #007bff; color: white; border-radius: 5px; }
+        .nav-links { text-align: center; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="nav-links">
+        <a href="{{ url_for('home') }}">홈</a> |
+        <a href="{{ url_for('list_strategies') }}">전략 목록</a> |
+        <a href="{{ url_for('add_strategy') }}" class="add-link" style="display:inline-block; margin: 0 10px;">새 전략 등록하기</a> |
+        <a href="{{ url_for('stock_data_view') }}">주가 데이터 조회</a>
+    </div>
+    <h1 style="text-align: center;">전략 목록</h1>
+    
+    {% if strategies %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>전략명</th>
+                    <th>설명</th>
+                    <th>조건 요약</th>
+                    <th>등록일</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for strategy in strategies %}
+                <tr>
+                    <td>{{ strategy.id }}</td>
+                    <td>{{ strategy.name }}</td>
+                    <td>{{ strategy.description }}</td>
+                    <td>{{ strategy.conditions_summary if strategy.conditions_summary else '설정된 조건 없음' }}</td>
+                    <td>{{ strategy.created_at.strftime('%Y-%m-%d %H:%M:%S') if strategy.created_at else '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="text-align: center;">등록된 전략이 없습니다.</p>
+    {% endif %}
+</body>
+</html>

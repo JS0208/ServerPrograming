@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>주가 데이터 조회</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .container { width: 80%; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        label { display: inline-block; margin-right: 10px; font-weight: bold; }
+        input[type="text"], input[type="date"] { padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        input[type="submit"] { background-color: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        input[type="submit"]:hover { background-color: #218838; }
+        .error { color: red; margin-top: 10px; }
+        .data-table-container { margin-top: 30px; max-height: 500px; overflow-y: auto; }
+        table.table { width: 100%; margin-bottom: 1rem; color: #212529; border-collapse: collapse; }
+        table.table th, table.table td { padding: .75rem; vertical-align: top; border-top: 1px solid #dee2e6; }
+        table.table thead th { vertical-align: bottom; border-bottom: 2px solid #dee2e6; background-color: #f8f9fa; }
+        table.table-striped tbody tr:nth-of-type(odd) { background-color: rgba(0,0,0,.05); }
+        table.table-hover tbody tr:hover { color: #212529; background-color: rgba(0,0,0,.075); }
+        h2 { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>주가 데이터 조회 (FinanceDataReader)</h2>
+        <form method="POST">
+            <div>
+                <label for="ticker">종목코드/티커:</label>
+                <input type="text" id="ticker" name="ticker" value="{{ ticker if ticker else '005930' }}" required>
+                <label for="start_date">시작일:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date if start_date else '' }}" required>
+                <label for="end_date">종료일:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date if end_date else '' }}" required>
+                <input type="submit" value="조회하기">
+            </div>
+        </form>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        {% if data_table %}
+            <h3>{{ ticker }} 주가 정보 ({{ start_date }} ~ {{ end_date }})</h3>
+            <div class="data-table-container">
+                {{ data_table | safe }}
+            </div>
+        {% endif %}
+        <br>
+        <a href="{{ url_for('index') }}">홈으로</a> |
+        <a href="{{ url_for('list_strategies') }}">전략 목록 보기</a>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>백테스트 결과</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f9f9f9; }
+        .container { width: 80%; margin: auto; padding: 20px; background-color: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+        h1, h2 { text-align: center; color: #333; }
+        .summary { margin-bottom: 30px; padding: 15px; border: 1px solid #eee; border-radius: 5px; background-color: #fdfdfd;}
+        .summary p { margin: 8px 0; font-size: 1.1em; }
+        .summary p strong { color: #555; min-width: 180px; display: inline-block;}
+        .data-table-container { margin-top: 20px; }
+        table.table { width: 100%; margin-bottom: 1rem; color: #212529; border-collapse: collapse; }
+        table.table th, table.table td { padding: .75rem; vertical-align: top; border-top: 1px solid #dee2e6; text-align: right; }
+        table.table thead th { vertical-align: bottom; border-bottom: 2px solid #dee2e6; background-color: #e9ecef; text-align: center; }
+        table.table-striped tbody tr:nth-of-type(odd) { background-color: rgba(0,0,0,.03); }
+        .nav-links { text-align: center; margin-top: 30px; }
+        .nav-links a { margin: 0 10px; text-decoration: none; color: #007bff; padding: 8px 15px; background-color: #e9ecef; border-radius: 4px; }
+        .nav-links a:hover { background-color: #d0d6db; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>백테스트 결과</h1>
+        <div class="summary">
+            <h2>{{ result.strategy_name }} ({{ result.ticker }})</h2>
+            <p><strong>테스트 기간:</strong> {{ result.period }}</p>
+            <p><strong>적용된 조건:</strong>
+                {% for cond in result.conditions_applied %}
+                    {{ cond.indicator_type }}: {{ cond.value }}{% if not loop.last %}; {% endif %}
+                {% endfor %}
+            </p>
+            <hr>
+            <p><strong>초기 자본금:</strong> {{ result.initial_capital }}</p>
+            <p><strong>최종 자산 가치:</strong> {{ result.final_portfolio_value }}</p>
+            <p><strong>누적 수익률:</strong> <span style="color: {{ 'blue' if result.total_return_pct.startswith('-') else 'red' }}; font-weight: bold;">{{ result.total_return_pct }}</span></p>
+            <p><strong>최대 낙폭 (MDD):</strong> <span style="color: blue; font-weight: bold;">{{ result.max_drawdown_pct }}</span></p>
+            <p><strong>승률:</strong> {{ result.win_rate_pct }}</p>
+            <p><strong>총 거래 횟수:</strong> {{ result.num_trades }}</p>
+        </div>
+
+        <h2>상세 데이터 (최근 20일)</h2>
+        <div class="data-table-container">
+            {{ stock_data_html | safe }}
+        </div>
+
+        <div class="nav-links">
+            <a href="{{ url_for('run_backtest_page') }}">다른 백테스트 실행</a>
+            <a href="{{ url_for('list_strategies') }}">전략 목록으로</a>
+            <a href="{{ url_for('home') }}">홈으로</a>
+        </div>
+    </div>
+</body>
+</html>

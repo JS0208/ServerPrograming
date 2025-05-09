@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>백테스트 실행</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .container { width: 60%; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input[type="text"], input[type="date"], select { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        input[type="submit"] { background-color: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        input[type="submit"]:hover { background-color: #218838; }
+        .nav-links { text-align: center; margin-bottom: 20px; }
+        .nav-links a { margin: 0 10px; text-decoration: none; color: #007bff; }
+        h1 { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="nav-links">
+        <a href="{{ url_for('home') }}">홈</a> |
+        <a href="{{ url_for('list_strategies') }}">전략 목록</a> |
+        <a href="{{ url_for('add_strategy') }}">전략 등록</a> |
+        <a href="{{ url_for('stock_data_view') }}">주가 데이터 조회</a>
+    </div>
+    <div class="container">
+        <h1>백테스트 실행</h1>
+        <form method="POST" action="{{ url_for('execute_backtest') }}">
+            <div>
+                <label for="strategy_id">전략 선택:</label>
+                <select id="strategy_id" name="strategy_id" required>
+                    <option value="">-- 전략을 선택하세요 --</option>
+                    {% for strategy in strategies %}
+                        <option value="{{ strategy.id }}">{{ strategy.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="ticker">종목 코드/티커:</label>
+                <input type="text" id="ticker" name="ticker" placeholder="예: 005930 또는 AAPL" required>
+            </div>
+            <div>
+                <label for="start_date">시작일:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ default_start_date }}" required>
+            </div>
+            <div>
+                <label for="end_date">종료일:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ default_end_date }}" required>
+            </div>
+            <div>
+                <input type="submit" value="백테스트 실행하기">
+            </div>
+        </form>
+    </div>
+</body>
+</html>
