@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>백테스트 결과 보고서</title>
+    <style>
+        body { font-family: 'NanumGothic', sans-serif; /* 한글 폰트 지정 중요 */ padding: 20px; }
+        h1, h2 { color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .card { border: 1px solid #ddd; margin-bottom: 20px; padding: 15px; border-radius: 5px; }
+        .kpi-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .kpi-table th, .kpi-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .kpi-table th { background-color: #f9f9f9; }
+        .text-success { color: green; }
+        .text-danger { color: red; }
+        .badge { display: inline-block; padding: .25em .4em; font-size: 75%; font-weight: 700; line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: .25rem; background-color: #e9ecef; color: #212529; margin-right: 5px;}
+        .chart-placeholder { width: 100%; height: 300px; background-color: #f0f0f0; text-align: center; line-height: 300px; border: 1px dashed #ccc; margin-bottom: 20px; }
+        /* 필요한 경우 더 많은 스타일 추가 */
+    </style>
+</head>
+<body>
+    <header style="text-align: center; margin-bottom: 30px;">
+        <h1 style="font-size: 24px; color: #0056b3;">백테스트 결과 보고서</h1>
+    </header>
+
+    <div class="card">
+        <h2>전략 및 기간 정보</h2>
+        <p><strong>전략명:</strong> {{ result_data.strategy_name }}</p>
+        <p><strong>종목(들):</strong> {{ result_data.ticker_display }}</p> {# 포트폴리오/단일 종목 구분 처리 필요 #}
+        <p><strong>테스트 기간:</strong> {{ result_data.period }}</p>
+        {% if result_data.strategy_type %}
+        <p><strong>전략 유형:</strong> {{ result_data.strategy_type }}</p>
+        {% endif %}
+        <p><strong>적용된 조건:</strong>
+            {% for cond in result_data.conditions_applied %}
+                <span class="badge">{{ cond.indicator_type }}: {{ cond.value }}</span>
+            {% else %}
+                <span>설정된 조건 없음</span>
+            {% endfor %}
+        </p>
+        {% if result_data.position_sizing_info %}
+        <p><strong>포지션 사이징:</strong> {{ result_data.position_sizing_info }}</p>
+        {% endif %}
+        {% if result_data.applied_costs_info %}
+        <p><small>적용 비용: {{ result_data.applied_costs_info }}</small></p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>주요 성과 지표 (KPI)</h2>
+        <table class="kpi-table">
+            <tr><th>초기 자본금</th><td>{{ result_data.initial_capital }}</td></tr>
+            <tr><th>최종 자산 가치</th><td>{{ result_data.final_portfolio_value }}</td></tr>
+            <tr><th>누적 수익률</th><td class="{{ 'text-success' if result_data.total_return_pct_raw > 0 else ('text-danger' if result_data.total_return_pct_raw < 0 else '') }}">{{ result_data.total_return_pct }}</td></tr>
+            <tr><th>CAGR (연복리 수익률)</th><td class="{{ 'text-success' if result_data.cagr_pct_raw > 0 else ('text-danger' if result_data.cagr_pct_raw < 0 else '') }}">{{ result_data.cagr_pct }}</td></tr>
+            <tr><th>최대 낙폭 (MDD)</th><td class="text-danger">{{ result_data.max_drawdown_pct }}</td></tr>
+            <tr><th>승률</th><td>{{ result_data.win_rate_pct }}</td></tr>
+            <tr><th>총 거래 횟수</th><td>{{ result_data.num_trades }}</td></tr>
+        </table>
+    </div>
+
+    {# 차트 이미지 삽입 (백엔드에서 생성하여 경로 전달 또는 base64 인코딩) #}
+    {% if equity_chart_path %}
+    <div class="card">
+        <h2>포트폴리오 가치 변화 (Equity Curve)</h2>
+        <img src="{{ equity_chart_path }}" alt="Equity Curve" style="width: 100%; max-width: 600px; display: block; margin: auto;">
+    </div>
+    {% else %}
+    <div class="card chart-placeholder">Equity Curve 차트 (생성 실패 또는 데이터 부족)</div>
+    {% endif %}
+    
+    {% if drawdown_chart_path %}
+    <div class="card">
+        <h2>Drawdown (%)</h2>
+        <img src="{{ drawdown_chart_path }}" alt="Drawdown Chart" style="width: 100%; max-width: 600px; display: block; margin: auto;">
+    </div>
+    {% else %}
+    <div class="card chart-placeholder">Drawdown 차트 (생성 실패 또는 데이터 부족)</div>
+    {% endif %}
+
+    {# 상세 데이터 테이블 등 추가 정보 (필요시) #}
+    {# 
+    {% if stock_data_html_for_pdf %}
+    <div class="card">
+        <h2>상세 데이터 (일부)</h2>
+        {{ stock_data_html_for_pdf | safe }}
+    </div>
+    {% endif %}
+    #}
+
+    <footer style="text-align: center; margin-top: 30px; font-size: 0.8em; color: #777;">
+        <p>보고서 생성일: {{ generation_date }}</p>
+        <p>&copy; {{ current_year }} 나의 백테스팅 시스템</p>
+    </footer>
+</body>
+</html>

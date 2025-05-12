@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}새 전략 등록 - 백테스팅 시스템{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7"> {# 너비 조정 #}
+        <h1 class="mb-4 text-center">새 전략 등록</h1>
+        <form method="POST" id="strategyForm">
+            <div class="mb-3">
+                <label for="name" class="form-label">전략명</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ name if name else '' }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">설명</label>
+                <textarea class="form-control" id="description" name="description" rows="3">{{ description if description else '' }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="strategy_type" class="form-label">전략 유형</label>
+                <select class="form-select" id="strategy_type" name="strategy_type">
+                    {% for type_option in strategy_types %}
+                        <option value="{{ type_option }}" {% if strategy_type == type_option %}selected{% endif %}>{{ type_option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <fieldset class="mb-3 p-3 border rounded">
+                <legend class="w-auto px-2 h6">전략 조건</legend>
+                <div id="conditionsContainer">
+                    {# 초기 조건 입력 필드 (JavaScript로 추가될 내용의 템플릿 역할도 겸함) #}
+                    {# 조건이 없을 경우를 위해 초기에 하나는 비워둘 수도 있음 #}
+                </div>
+                <button type="button" class="btn btn-outline-success btn-sm mt-2" id="addConditionBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle-fill" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z"/>
+                    </svg>
+                    조건 추가
+                </button>
+            </fieldset>
+            
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">등록하기</button>
+                <a href="{{ url_for('list_strategies') }}" class="btn btn-outline-secondary">목록으로 돌아가기</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# 조건 입력 필드 그룹을 위한 JavaScript 템플릿 #}
+<template id="conditionTemplate">
+    <div class="condition-item mb-3 p-3 border rounded bg-light">
+        <div class="row">
+            <div class="col-10">
+                <div class="mb-2">
+                    <label for="indicator_type_X" class="form-label fw-bold">지표 타입</label>
+                    <select class="form-select form-select-sm indicator-type-select" name="conditions-X-indicator_type">
+                        <option value="" selected>-- 선택 --</option>
+                        <option value="SMA">SMA (단순이동평균)</option>
+                        <option value="RSI">RSI (상대강도지수)</option>
+                        <option value="MACD">MACD</option>
+                        <option value="BollingerBand">볼린저밴드</option>
+                        {# 필요에 따라 더 많은 지표 추가 #}
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label for="indicator_value_X" class="form-label fw-bold">지표 값/설정</label>
+                    <input type="text" class="form-control form-control-sm indicator-value-input" name="conditions-X-value" placeholder="예: SMA의 경우 기간 '20'">
+                    <div class="form-text small">
+                        SMA: 기간 (예: 20), RSI: 기간,기준선 (예: 14,30), MACD: 단기,장기,시그널 (예: 12,26,9)
+                    </div>
+                </div>
+            </div>
+            <div class="col-2 d-flex align-items-center justify-content-end">
+                <button type="button" class="btn btn-danger btn-sm removeConditionBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                      <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const conditionsContainer = document.getElementById('conditionsContainer');
+    const addConditionBtn = document.getElementById('addConditionBtn');
+    const conditionTemplate = document.getElementById('conditionTemplate');
+    let conditionIndex = 0;
+
+    function addCondition(indicatorType = '', indicatorValue = '') {
+        const newCondition = conditionTemplate.content.cloneNode(true);
+        const conditionItem = newCondition.querySelector('.condition-item');
+        
+        conditionItem.querySelector('.indicator-type-select').name = `conditions-${conditionIndex}-indicator_type`;
+        conditionItem.querySelector('.indicator-type-select').id = `indicator_type_${conditionIndex}`;
+        conditionItem.querySelector('.indicator-type-select').value = indicatorType;
+        
+        conditionItem.querySelector('.indicator-value-input').name = `conditions-${conditionIndex}-value`;
+        conditionItem.querySelector('.indicator-value-input').id = `indicator_value_${conditionIndex}`;
+        conditionItem.querySelector('.indicator-value-input').value = indicatorValue;
+        
+        conditionItem.querySelector('label[for="indicator_type_X"]').htmlFor = `indicator_type_${conditionIndex}`;
+        conditionItem.querySelector('label[for="indicator_value_X"]').htmlFor = `indicator_value_${conditionIndex}`;
+
+        conditionItem.querySelector('.removeConditionBtn').addEventListener('click', function() {
+            this.closest('.condition-item').remove();
+            // 인덱스 재정렬은 복잡하므로, 서버에서 빈 값을 필터링하거나 순서대로 처리하는 것이 간단할 수 있음
+            // 또는 삭제 시 인덱스를 재정렬하는 로직 추가 가능
+        });
+
+        conditionsContainer.appendChild(newCondition);
+        conditionIndex++;
+    }
+
+    addConditionBtn.addEventListener('click', function() {
+        addCondition(); // 새 빈 조건 추가
+    });
+
+    // 페이지 로드 시 최소 1개의 조건 필드를 보여주기 (선택 사항)
+    if (conditionsContainer.children.length === 0) {
+       addCondition();
+    }
+});
+</script>
+{% endblock %}

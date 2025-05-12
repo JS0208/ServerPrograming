@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}주가 데이터 조회 - 백테스팅 시스템{% endblock %}
+
+{% block content %}
+<div class="pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">주가 데이터 조회 (FinanceDataReader)</h1>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        조회 조건
+    </div>
+    <div class="card-body">
+        <form method="POST" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="ticker" class="form-label">종목코드/티커</label>
+                <input type="text" class="form-control" id="ticker" name="ticker" value="{{ ticker if ticker else '005930' }}" required>
+            </div>
+            <div class="col-md-3">
+                <label for="start_date" class="form-label">시작일</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date if start_date else '' }}" required>
+            </div>
+            <div class="col-md-3">
+                <label for="end_date" class="form-label">종료일</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date if end_date else '' }}" required>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">조회하기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if error %}
+    <div class="alert alert-danger mt-3" role="alert">
+        {{ error }}
+    </div>
+{% endif %}
+
+{% if data_table %}
+    <div class="card mt-4">
+        <div class="card-header">
+            {{ ticker }} 주가 정보 ({{ start_date }} ~ {{ end_date }})
+        </div>
+        <div class="card-body table-responsive">
+            {{ data_table | safe }} {# data_table은 app.py에서 to_html(classes=...)로 Bootstrap 클래스가 이미 적용되어 있을 수 있음 #}
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
