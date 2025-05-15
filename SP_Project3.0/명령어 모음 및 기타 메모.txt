@@ -1,0 +1,6 @@
+pip install mysql-connector-python
+pip install finance-datareader
+pip install matplotlib
+
+- yfinance 모듈은 최근 버그가 잦아서 finance data reader 활용했습니다.
+- db_config에서 본인 sql 환경 설정해주세요

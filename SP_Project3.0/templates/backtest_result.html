@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}
+    백테스트 결과 - 
+    {% if is_portfolio_result %}
+        {{ result.strategy_name }} (포트폴리오: {{ result.ticker }})
+    {% else %}
+        {{ result.strategy_name }} ({{ result.ticker }})
+    {% endif %}
+{% endblock %}
+
+{% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">백테스트 결과</h1>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">
+                {{ result.strategy_name }} 
+                {% if is_portfolio_result %}
+                    (포트폴리오: {{ result.ticker }}) {# result.ticker가 문자열 리스트일 경우 join 필요 #}
+                {% else %}
+                    ({{ result.ticker }})
+                {% endif %}
+            </h2>
+        </div>
+        <div class="card-body">
+            <p><strong>테스트 기간:</strong> {{ result.period }}</p>
+            <p><strong>적용된 조건:</strong>
+                {% for cond in result.conditions_applied %}
+                    <span class="badge bg-secondary me-1">{{ cond.indicator_type }}: {{ cond.value }}</span>
+                {% endfor %}
+            </p>
+            {% if result.position_sizing_info %} {# 포지션 사이징 정보가 있으면 표시 #}
+            <p><strong>포지션 사이징:</strong> {{ result.position_sizing_info }}</p>
+            {% endif %}
+            {% if result.applied_costs_info %}
+            <p><small class="text-muted">{{ result.applied_costs_info }}</small></p>
+            {% endif %}
+            <hr>
+            <div class="row">
+            <div class="col-md-6">
+                <p><strong>초기 자본금:</strong> {{ result.initial_capital }}</p>
+                <p><strong>최종 자산 가치:</strong> {{ result.final_portfolio_value }}</p>
+                <p><strong>누적 수익률:</strong> <span class="{{ 'text-success' if result.total_return_pct.startswith('-') == false and result.total_return_pct != '0.00%' else ('text-danger' if result.total_return_pct.startswith('-') else '') }} fw-bold">{{ result.total_return_pct }}</span></p>
+                <p><strong>CAGR (연복리 수익률):</strong> <span class="{{ 'text-success' if result.cagr_pct and result.cagr_pct != 'N/A (기간 부족)' and result.cagr_pct != 'N/A (기간 1년 미만)' and not result.cagr_pct.startswith('-') else ('text-danger' if result.cagr_pct and result.cagr_pct.startswith('-') else '') }} fw-bold">{{ result.cagr_pct }}</span></p> {# CAGR 추가 #}
+            </div>
+            <div class="col-md-6">
+                <p><strong>최대 낙폭 (MDD):</strong> <span class="text-danger fw-bold">{{ result.max_drawdown_pct }}</span></p>
+                <p><strong>승률:</strong> {{ result.win_rate_pct }}</p>
+                <p><strong>총 거래 횟수:</strong> {{ result.num_trades }}</p>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4"> {# Equity Curve가 더 중요하므로 col-lg-6 유지 또는 col-lg-12로 넓게 #}
+            <div class="card h-100">
+                <div class="card-header"><h2 class="h5 mb-0">포트폴리오 가치 변화 (Equity Curve)</h2></div>
+                <div class="card-body"><canvas id="equityCurveChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header"><h2 class="h5 mb-0">Drawdown (%)</h2></div>
+                <div class="card-body"><canvas id="drawdownChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="row"> {# 새로운 행에 히스토그램 추가 #}
+        <div class="col-lg-12 mb-4"> {# 히스토그램은 전체 너비 사용 또는 col-lg-6, col-lg-4 등 조정 가능 #}
+             <div class="card h-100">
+                <div class="card-header"><h2 class="h5 mb-0">월별 수익률 분포</h2></div>
+                <div class="card-body"><canvas id="monthlyReturnHistogram"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    {# 상세 데이터 테이블 카드 다음, 그리고 다른 페이지로 이동하는 버튼들 바로 위 #}
+    <div class="text-center mt-4 mb-4"> 
+        <a href="{{ url_for('download_excel_report', result_id=result_id) }}" class="btn btn-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-excel-fill me-1" viewBox="0 0 16 16">
+                <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1zM5.884 6.68 8 9.219l2.116-2.54a.5.5 0 1 1 .768.641L8.651 10l2.233 2.68a.5.5 0 0 1-.768.64L8 10.781l-2.116 2.54a.5.5 0 0 1-.768-.641L7.349 10 5.116 7.32a.5.5 0 1 1 .768-.64z"/>
+            </svg>
+            Excel로 리포트 저장
+        </a>
+        <a href="{{ url_for('download_pdf_report', result_id=result_id) }}" class="btn btn-danger ms-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-pdf-fill me-1" viewBox="0 0 16 16">
+                <path d="M5.523 12.424q.21-.124.459-.238a8.03 8.03 0 0 1-.45.606c-.28.337-.498.516-.635.572a.266.266 0 0 1-.035.012.282.282 0 0 1-.026-.044c-.056-.11-.054-.216.04-.36.106-.165.319-.354.647-.548zm2.455-1.647q-.176.023-.355.048l-.003.003c-.012.002-.023.005-.033.008a.5.5 0 0 1-.051.025.318.318 0 0 1-.073.011.326.326 0 0 1-.094-.011c-.032-.011-.06-.026-.081-.043a.52.52 0 0 1-.047-.038.29.29 0 0 1-.032-.04c-.013-.017-.019-.033-.023-.046a.27.27 0 0 1-.017-.047c-.002-.013-.003-.026-.003-.039a.257.257 0 0 1 .01-.05.337.337 0 0 1 .042-.068c.024-.029.058-.054.103-.073.08-.034.176-.056.293-.065.107-.007.227-.003.353.004q.116.007.223.015c.005.001.009.002.014.003l.003.001a.244.244 0 0 1 .048.007.5.5 0 1 1-.05-.99A.25.25 0 0 1 8.25 10h.015l.002.001.002.001a.5.5 0 0 1 .049.008c.019.007.036.015.051.025a.32.32 0 0 1 .045.03.5.5 0 0 1 .03.04c.01.013.019.028.027.045a.542.542 0 0 1 .024.057.5.5 0 0 1 .008.054c.002.017.002.034 0 .051a.5.5 0 0 1-.021.086.48.48 0 0 1-.043.076.33.33 0 0 1-.055.055.485.485 0 0 1-.068.043.33.33 0 0 1-.063.029.5.5 0 0 1-.077.018.305.305 0 0 1-.098-.004.5.5 0 0 1-.05-.016.5.5 0 0 1-.048-.027q-.04-.02-.077-.042l-.004-.002a.24.24 0 0 1-.022-.013.24.24 0 0 1-.02-.013q-.107-.046-.192-.084c-.003-.001-.006-.003-.009-.004a.25.25 0 0 1-.042-.028.5.5 0 0 1-.023-.029.46.46 0 0 1-.043-.05a.41.41 0 0 1-.018-.041.44.44 0 0 1-.004-.042q.001-.026.003-.051a.42.42 0 0 1 .016-.073.25.25 0 0 1 .029-.065.47.47 0 0 1 .048-.072.5.5 0 0 1 .05-.053.47.47 0 0 1 .072-.048.25.25 0 0 1 .065-.029.42.42 0 0 1 .073-.016q.026-.003.051-.003a.44.44 0 0 1 .042.004.41.41 0 0 1 .041.018.46.46 0 0 1 .05.043.5.5 0 0 1 .029.023.24.24 0 0 1 .02.013.24.24 0 0 1 .022.013c.002.001.003.002.004.003.037.018.074.038.108.058q.015.009.031.019c.007.004.015.009.022.014a.473.473 0 0 1 .042.033l.002.001q.015.012.028.025a.5.5 0 0 1 .025.031.49.49 0 0 1 .02.033c.006.01.01.02.015.03l.001.002q.007.015.012.03a.485.485 0 0 1 .007.033c.002.01.003.02.003.03a.5.5 0 0 1-.003.03.485.485 0 0 1-.007.033q-.005.015-.012.03l-.001.002a.49.49 0 0 1-.015.03.49.49 0 0 1-.02.033.5.5 0 0 1-.025.031q-.013.013-.028.025l-.002.001a.473.473 0 0 1-.042.033c-.007.005-.015.009-.022.014a.5.5 0 0 1-.031.019q-.034.02-.07.037l-.002.001a.244.244 0 0 1-.048.027.5.5 0 0 1-.05.016.305.305 0 0 1-.098.004.5.5 0 0 1-.077-.018.33.33 0 0 1-.063-.029.485.485 0 0 1-.068-.043.33.33 0 0 1-.055-.055.48.48 0 0 1-.043-.076.5.5 0 0 1-.021-.086c0-.017-.001-.034.002-.051a.5.5 0 0 1 .008-.054.542.542 0 0 1 .024-.057c.008-.017.017-.032.027-.045a.5.5 0 0 1 .03-.04.32.32 0 0 1 .045-.03c.015-.009.032-.018.051-.025A.5.5 0 0 1 8.5 12a.5.5 0 0 1 .048-.007l.002-.001.002-.001h.015a.25.25 0 0 1 .04-.006.5.5 0 1 1-.05.99zM9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1M4.165 13.668c.09.148.217.319.369.524.152.205.304.412.457.618.152.207.297.406.436.592.14.188.272.364.396.529a.25.25 0 0 0 .499-.338c-.124-.166-.256-.342-.396-.53-.14-.187-.285-.386-.437-.593a.522.522 0 0 0-.457-.617.517.517 0 0 0-.369-.524.25.25 0 0 0-.499.338"/>
+                <path fill-rule="evenodd" d="M7.613 10.368q.09.103.183.213.101.118.196.243a.806.806 0 0 1 .17.266q.053.115.088.235a.438.438 0 0 1 .04.246.413.413 0 0 1-.03.161.363.363 0 0 1-.08.133.334.334 0 0 1-.116.091.33.33 0 0 1-.133.032.397.397 0 0 1-.123-.02.497.497 0 0 1-.11-.056.567.567 0 0 1-.093-.082.922.922 0 0 1-.07-.102q-.044-.06-.07-.123a.989.989 0 0 1-.045-.147.94.94 0 0 1-.018-.158.874.874 0 0 1 .006-.163.82.82 0 0 1 .03-.155.72.72 0 0 1 .05-.14.63.63 0 0 1 .07-.12.53.53 0 0 1 .086-.097.46.46 0 0 1 .096-.073.402.402 0 0 1 .102-.05q.05-.022.103-.034a.402.402 0 0 1 .112-.02.401.401 0 0 1 .112.02.402.402 0 0 1 .103.034q.053.022.102.05a.46.46 0 0 1 .096.073.53.53 0 0 1 .086.097.63.63 0 0 1 .07.12.72.72 0 0 1 .05.14.82.82 0 0 1 .03.155.874.874 0 0 1 .006.163.94.94 0 0 1-.018.158.989.989 0 0 1-.045.147q-.026.063-.07.123a.922.922 0 0 1-.07.102.567.567 0 0 1-.093.082.497.497 0 0 1-.11.056.397.397 0 0 1-.123.02.33.33 0 0 1-.133-.032.334.334 0 0 1-.116-.091.363.363 0 0 1-.08-.133.413.413 0 0 1-.03-.161.438.438 0 0 1 .04-.246q.035-.12.088-.235a.806.806 0 0 1 .17-.266q.095-.125.196-.243.093-.11.183-.213zm-3.56.026c.053.01.107.018.16.025q.077.01.148.015a.74.74 0 0 1 .203.016.884.884 0 0 1 .186.03q.08.019.153.04a1.19 1.19 0 0 1 .136.052c.042.02.08.043.116.068q.05.033.09.07a.747.747 0 0 1 .074.093.616.616 0 0 1 .052.103.548.548 0 0 1 .026.107.536.536 0 0 1 .003.106.56.56 0 0 1-.012.109.666.666 0 0 1-.037.106.842.842 0 0 1-.063.1.96.96 0 0 1-.09.09.96.96 0 0 1-.116.077.96.96 0 0 1-.14.056.924.924 0 0 1-.162.035a.86.86 0 0 1-.182.012.82.82 0 0 1-.194-.011.86.86 0 0 1-.182-.035.924.924 0 0 1-.162-.056.96.96 0 0 1-.14-.077.96.96 0 0 1-.116-.09.96.96 0 0 1-.09-.1.842.842 0 0 1-.063-.106.666.666 0 0 1-.037-.109.56.56 0 0 1-.012-.106.536.536 0 0 1 .003-.107.548.548 0 0 1 .026-.106.616.616 0 0 1 .052-.102.747.747 0 0 1 .074-.093q.04-.038.09-.07a1.19 1.19 0 0 1 .116-.068c.036-.025.074-.045.136-.052q.073-.021.153-.04a.884.884 0 0 1 .186-.03.74.74 0 0 1 .203-.016q.07-.004.148-.014c.053-.008.107-.016.16-.025z"/>
+            </svg>
+            PDF로 리포트 저장
+        </a>
+    </div>
+
+    <div class="card mt-2">
+        <div class="card-header">
+            <h2 class="h5 mb-0">
+                {% if is_portfolio_result %}
+                    포트폴리오 상세 데이터 (최근 20일)
+                {% else %}
+                    상세 데이터 (최근 20일)
+                {% endif %}
+            </h2>
+        </div>
+        <div class="card-body table-responsive">{{ stock_data_html | safe }}</div> {# stock_data_html이 포트폴리오에 맞게 전달되어야 함 #}
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('run_backtest_page') }}" class="btn btn-primary">다른 백테스트 실행</a>
+        <a href="{{ url_for('list_results') }}" class="btn btn-secondary">결과 목록으로</a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const chartLabels = {{ chart_labels|tojson }};
+
+    // Equity Curve Chart (이전과 동일)
+    const equityCtx = document.getElementById('equityCurveChart').getContext('2d');
+    const portfolioValues = {{ chart_portfolio_values|tojson }};
+    new Chart(equityCtx, { type: 'line', data: { labels: chartLabels, datasets: [{ label: '포트폴리오 가치', data: portfolioValues, borderColor: 'rgb(54, 162, 235)', backgroundColor: 'rgba(54, 162, 235, 0.1)', tension: 0.1, fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: 'month', tooltipFormat: 'yyyy-MM-dd', displayFormats: {month: 'yyyy-MM'} }, title: { display: true, text: '날짜' } }, y: { title: { display: true, text: '가치 (원)' }, ticks: { callback: function(value) { return value.toLocaleString(); } } } }, plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) { label += ': '; } if (context.parsed.y !== null) { label += context.parsed.y.toLocaleString() + ' 원'; } return label; } } } } } });
+
+    // Drawdown Chart (이전과 동일)
+    const drawdownCtx = document.getElementById('drawdownChart').getContext('2d');
+    const drawdownValues = {{ chart_drawdown_values|tojson }};
+    new Chart(drawdownCtx, { type: 'line', data: { labels: chartLabels, datasets: [{ label: 'Drawdown', data: drawdownValues, borderColor: 'rgb(255, 99, 132)', backgroundColor: 'rgba(255, 99, 132, 0.1)', fill: true, tension: 0.1, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: 'month', tooltipFormat: 'yyyy-MM-dd', displayFormats: {month: 'yyyy-MM'} }, title: { display: true, text: '날짜' } }, y: { title: { display: true, text: 'Drawdown (%)' }, ticks: { callback: function(value) { return (value * 100).toFixed(1) + '%'; } } } }, plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) { label += ': '; } if (context.parsed.y !== null) { label += (context.parsed.y * 100).toFixed(2) + '%'; } return label; } } } } } });
+
+    // Monthly Return Histogram
+    const histogramLabels = {{ histogram_labels|tojson }};
+    const histogramFrequencies = {{ histogram_frequencies|tojson }};
+    const histogramCtx = document.getElementById('monthlyReturnHistogram').getContext('2d');
+
+    if (histogramLabels && histogramLabels.length > 0 && histogramFrequencies && histogramFrequencies.length > 0) {
+        new Chart(histogramCtx, {
+            type: 'bar',
+            data: {
+                labels: histogramLabels,
+                datasets: [{
+                    label: '월별 수익률 빈도수',
+                    data: histogramFrequencies,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)', // 청록색 계열
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '월별 수익률 구간 (%)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '빈도수 (월)'
+                        },
+                        ticks: {
+                            beginAtZero: true, // Y축은 0부터 시작
+                            stepSize: 1 // 정수 단위로 눈금 표시 (데이터에 따라 조절)
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(tooltipItems) { // 툴팁 제목을 수익률 구간으로 표시
+                                return tooltipItems[0].label;
+                            },
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y + ' 개월';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        // 히스토그램 데이터가 없을 경우 메시지 표시 (예: 캔버스에 직접 텍스트 그리기)
+        histogramCtx.font = "16px Arial";
+        histogramCtx.textAlign = "center";
+        histogramCtx.fillText("월별 수익률 히스토그램을 생성하기에 데이터가 충분하지 않습니다.", histogramCtx.canvas.width / 2, histogramCtx.canvas.height / 2);
+    }
+});
+</script>
+{% endblock %}

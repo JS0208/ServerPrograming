@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}백테스트 실행 - 백테스팅 시스템{% endblock %}
+
+{% block content %}
+<div class="pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">백테스트 실행</h1>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                백테스트 조건 설정
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('execute_backtest') }}">
+                    {# 전략, 티커, 기간 선택은 이전과 동일 #}
+                    <div class="mb-3">
+                        <label for="strategy_id" class="form-label">전략 선택</label>
+                        <select class="form-select" id="strategy_id" name="strategy_id" required>
+                            <option value="" disabled {% if not selected_strategy_id %}selected{% endif %}>-- 전략을 선택하세요 --</option>
+                            {% for strategy in strategies %}
+                                <option value="{{ strategy.id }}" {% if selected_strategy_id == strategy.id %}selected{% endif %}>{{ strategy.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {# 기존 run_backtest.html의 종목 코드/티커 입력 부분을 아래와 같이 수정 #}
+                    <div class="mb-3">
+                        <label for="tickers" class="form-label">종목 코드/티커 목록 (쉼표로 구분)</label>
+                        <input type="text" class="form-control" id="tickers" name="tickers" placeholder="예: 005930,035720,AAPL" value="{{ request.form.tickers if request.form.tickers else '005930,035720' }}" required>
+                        <div class="form-text">분석할 종목들의 티커를 쉼표(,)로 구분하여 입력합니다.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="weights" class="form-label">종목별 초기 투자 비중 (쉼표로 구분, 총합 100)</label>
+                        <input type="text" class="form-control" id="weights" name="weights" placeholder="예: 60,40 (총합 100%)" value="{{ request.form.weights if request.form.weights else '50,50' }}">
+                        <div class="form-text">위 티커 순서대로 각 종목의 초기 투자 비중(%)을 쉼표로 구분하여 입력합니다. 입력하지 않으면 동일 비중으로 배분됩니다.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="initial_capital" class="form-label">초기 자본금 (원)</label>
+                        <input type="number" class="form-control" id="initial_capital" name="initial_capital" value="{{ request.form.initial_capital if request.form.initial_capital else '10000000' }}" min="1" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="start_date" class="form-label">시작일</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ request.form.start_date if request.form.start_date else default_start_date }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end_date" class="form-label">종료일</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ request.form.end_date if request.form.end_date else default_end_date }}" required>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="mb-3">포지션 사이징 설정</h5>
+                    <div class="mb-3">
+                        <label for="position_sizing_method" class="form-label">방법 선택</label>
+                        <select class="form-select" id="position_sizing_method" name="position_sizing_method">
+                            <option value="all_in" {% if request.form.position_sizing_method == 'all_in' %}selected{% endif %}>전량 투자 (All-in)</option>
+                            <option value="fixed_amount" {% if request.form.position_sizing_method == 'fixed_amount' %}selected{% endif %}>고정 금액 투자</option>
+                            <option value="fixed_percentage" {% if request.form.position_sizing_method == 'fixed_percentage' %}selected{% endif %}>고정 비율 투자 (% of Equity)</option>
+                        </select>
+                    </div>
+
+                    <div id="fixed_amount_params" class="mb-3" style="display: {% if request.form.position_sizing_method == 'fixed_amount' %}block{% else %}none{% endif %};">
+                        <label for="fixed_amount_value" class="form-label">투자 금액 (원)</label>
+                        <input type="number" class="form-control" id="fixed_amount_value" name="fixed_amount_value" value="{{ request.form.fixed_amount_value if request.form.fixed_amount_value else '1000000' }}" min="1">
+                    </div>
+
+                    <div id="fixed_percentage_params" class="mb-3" style="display: {% if request.form.position_sizing_method == 'fixed_percentage' %}block{% else %}none{% endif %};">
+                        <label for="fixed_percentage_value" class="form-label">투자 비율 (%)</label>
+                        <input type="number" class="form-control" id="fixed_percentage_value" name="fixed_percentage_value" value="{{ request.form.fixed_percentage_value if request.form.fixed_percentage_value else '10' }}" min="0.1" max="100" step="0.1">
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">백테스트 실행하기</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const methodSelect = document.getElementById('position_sizing_method');
+    const fixedAmountParamsDiv = document.getElementById('fixed_amount_params');
+    const fixedPercentageParamsDiv = document.getElementById('fixed_percentage_params');
+
+    function toggleParamsVisibility() {
+        const selectedMethod = methodSelect.value;
+        fixedAmountParamsDiv.style.display = (selectedMethod === 'fixed_amount') ? 'block' : 'none';
+        fixedPercentageParamsDiv.style.display = (selectedMethod === 'fixed_percentage') ? 'block' : 'none';
+    }
+
+    methodSelect.addEventListener('change', toggleParamsVisibility);
+    toggleParamsVisibility(); // 페이지 로드 시 초기 상태 설정
+});
+</script>
+{% endblock %}
